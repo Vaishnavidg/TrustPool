@@ -2,21 +2,9 @@
 
 A comprehensive ERC-3643 compliant token management platform built on the Monad Testnet. TrustPool enables regulated token transfers through identity verification, claims management, and compliance enforcement.
 
-## 📋 Table of Contents
+## ERC3643 FLOW Diagram
+<img width="1532" height="810" alt="Screenshot from 2025-12-13 17-57-03" src="https://github.com/user-attachments/assets/86e82783-ee1c-4c4b-a288-336e54beffed" />
 
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Smart Contracts](#smart-contracts)
-- [Project Structure](#project-structure)
-- [Installation & Setup](#installation--setup)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
 
 ## 🎯 Overview
 
