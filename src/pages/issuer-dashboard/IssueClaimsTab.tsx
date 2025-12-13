@@ -18,27 +18,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import {
-  Shield,
-  Send,
-  Info,
-  CheckCircle,
-  RefreshCw,
-  Calendar,
-} from 'lucide-react'
+import { Shield, Send, Info, CheckCircle, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { writeContract, readContract } from '@wagmi/core'
-import {
-  useSignMessage,
-  useAccount,
-  usePublicClient,
-  useContractEvent,
-  useContractRead,
-} from 'wagmi'
+import { useSignMessage, useAccount, useContractRead } from 'wagmi'
 import IdentityABI from '../../../contracts-abi-files/IdentityABI.json'
 import ClaimTopicsABI from '../../../contracts-abi-files/ClaimTopicsABI.json'
 import TrustedIssuersABI from '../../../contracts-abi-files/TrustedIssuersABI.json'
-import { encodePacked, hexToString, keccak256, stringToHex } from 'viem'
+import { encodePacked, keccak256, stringToHex } from 'viem'
 import { CONTRACT_ADDRESSES } from '@/lib/config'
 
 /* ------------------------------------------------------------------
@@ -66,16 +53,6 @@ const generateClaimMessage = (
   return hashedMessage
 }
 
-interface IssuedClaim {
-  userAddress: string
-  topicId: number
-  topicName: string
-  timestamp: string
-  data?: string
-  validTo?: number
-  isValid?: boolean
-}
-
 /* ------------------------------------------------------------------
  * COMPONENT
  * ----------------------------------------------------------------*/
@@ -95,14 +72,6 @@ export function IssueClaimsTab() {
   const [errorMessage, setErrorMessage] = useState('')
   const { address } = useAccount()
 
-  /** Raw `ClaimAdded` logs fetched from the chain */
-  const [rawClaimLogs, setRawClaimLogs] = useState<any[]>([])
-
-  /** Map of topicId -> validity (true / false) */
-  const [claimValidity, setClaimValidity] = useState<Record<number, boolean>>(
-    {}
-  )
-
   /** Loading state for claim log fetch */
   const [isLoading, setIsLoading] = useState(false)
 
@@ -112,13 +81,13 @@ export function IssueClaimsTab() {
   const { toast } = useToast()
   const { signMessageAsync } = useSignMessage()
   const { address: currentUser } = useAccount()
-  const publicClient = usePublicClient()
 
   /* ------------------------------------------------------------------
    * AUTHORIZATION CHECK
    * ----------------------------------------------------------------*/
   useEffect(() => {
     const checkIssuerStatus = async () => {
+      setIsLoading(true)
       if (!currentUser) return
       try {
         const result = await readContract({
@@ -294,8 +263,8 @@ export function IssueClaimsTab() {
    * ----------------------------------------------------------------*/
   const formatAddress = (addr: string) =>
     `${addr.slice(0, 6)}...${addr.slice(-4)}`
-  const formatTimestamp = (ts: string) =>
-    `${new Date(ts).toLocaleDateString()} ${new Date(ts).toLocaleTimeString()}`
+  // const formatTimestamp = (ts: string) =>
+  //   `${new Date(ts).toLocaleDateString()} ${new Date(ts).toLocaleTimeString()}`
 
   /* ------------------------------------------------------------------
    * RENDER – UNAUTHORIZED VIEW

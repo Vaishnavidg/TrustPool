@@ -1,7 +1,9 @@
 const ExampleComponent = () => {
   return (
     <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-      <h2 className="mb-4 text-2xl font-semibold text-primary">Example Component</h2>
+      <h2 className="mb-4 text-2xl font-semibold text-primary">
+        Example Component
+      </h2>
       <p className="mb-2 text-muted-foreground">
         This is an example component demonstrating the folder structure.
       </p>
@@ -24,4 +26,3 @@ const ExampleComponent = () => {
 }
 
 export default ExampleComponent
-

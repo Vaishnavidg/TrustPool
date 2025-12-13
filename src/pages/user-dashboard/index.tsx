@@ -1,22 +1,15 @@
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { User, Shield, FileText, Send } from "lucide-react";
-import { CreateIdentityTab } from "./CreateIdentityTab";
-import { RegisterIdentityTab } from "./RegisterIdentityTab";
-import { MyClaimsTab } from "./MyClaimsTab";
-import { TransferTokenTab } from "./TransferTokenTab";
-import { ClaimRequestsTab } from "./ClaimRequestsTab";
+import { useState } from 'react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { User, Shield, FileText, Send } from 'lucide-react'
+import { CreateIdentityTab } from './CreateIdentityTab'
+import { RegisterIdentityTab } from './RegisterIdentityTab'
+import { MyClaimsTab } from './MyClaimsTab'
+import { TransferTokenTab } from './TransferTokenTab'
+import { ClaimRequestsTab } from './ClaimRequestsTab'
 
 export function UserDashboard() {
-  const [activeTab, setActiveTab] = useState("create-identity");
+  const [activeTab, setActiveTab] = useState('create-identity')
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -78,5 +71,5 @@ export function UserDashboard() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

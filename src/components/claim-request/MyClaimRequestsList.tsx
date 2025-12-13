@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Clock,
   CheckCircle,
@@ -12,21 +12,21 @@ import {
   MapPin,
   Building,
   RefreshCw,
-} from "lucide-react";
-import { useAccount, useContractRead } from "wagmi";
-import IdentityABI from "../../../contracts-abi-files/IdentityABI.json";
-import ClaimTopicsABI from "../../../contracts-abi-files/ClaimTopicsABI.json";
-import { CONTRACT_ADDRESSES } from "@/lib/config";
+} from 'lucide-react'
+import { useAccount, useContractRead } from 'wagmi'
+import IdentityABI from '../../../contracts-abi-files/IdentityABI.json'
+import ClaimTopicsABI from '../../../contracts-abi-files/ClaimTopicsABI.json'
+import { CONTRACT_ADDRESSES } from '@/lib/config'
 
-const IdentityAddress = CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`;
+const IdentityAddress = CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`
 const ClaimTopicAddress =
-  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`;
+  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`
 
 interface ClaimRequest {
-  id: string;
-  claimType: string;
-  issuerAddress: string;
-  status: string;
+  id: string
+  claimType: string
+  issuerAddress: string
+  status: string
 }
 
 const claimTypeIcons: Record<
@@ -35,112 +35,104 @@ const claimTypeIcons: Record<
 > = {
   kyc: User,
   aml: Shield,
-  "proof-of-residency": MapPin,
-  "business-license": Building,
-  "identity-document": FileCheck,
-};
-
-const claimTypeNames: Record<string, string> = {
-  kyc: "KYC Verification",
-  aml: "AML Compliance",
-  "proof-of-residency": "Proof of Residency",
-  "business-license": "Business License",
-  "identity-document": "Identity Document",
-};
+  'proof-of-residency': MapPin,
+  'business-license': Building,
+  'identity-document': FileCheck,
+}
 
 export function MyClaimRequestsList() {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { address } = useAccount();
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const { address } = useAccount()
 
   const { data: topicList } = useContractRead({
     address: ClaimTopicAddress,
     abi: ClaimTopicsABI,
-    functionName: "getClaimTopicsWithNamesAndDescription",
+    functionName: 'getClaimTopicsWithNamesAndDescription',
     watch: true,
-  });
+  })
 
   const topics = useMemo(() => {
-    if (!topicList) return [];
+    if (!topicList) return []
     const [ids, names, descriptions] = topicList as [
       bigint[],
       string[],
-      string[]
-    ];
+      string[],
+    ]
     return ids.map((id, index) => ({
       id: id.toString(),
       name: names[index],
       description: descriptions[index],
-    }));
-  }, [topicList]);
+    }))
+  }, [topicList])
 
   const { data } = useContractRead({
     address: IdentityAddress,
     abi: IdentityABI,
-    functionName: "getRequestsByUser",
+    functionName: 'getRequestsByUser',
     args: [address],
     watch: true,
-  });
+  })
 
-  console.log("data", data);
+  console.log('data', data)
   const requests = useMemo(() => {
-    if (!data || topics.length === 0) return [];
+    if (!data || topics.length === 0) return []
     const [ids, issuerAddresses, topicIds, statuses] = data as [
       bigint[],
       string[],
       bigint[],
-      boolean[]
-    ];
+      boolean[],
+    ]
 
     return ids.map((id, index) => {
-      const topicId = topicIds[index].toString();
-      const topic = topics.find((t) => t.id === topicId);
-      const claimType = topic ? topic.name : "Unknown";
-      const statusValue = statuses[index];
-      const status = statusValue === false ? "pending" : "approved";
+      const topicId = topicIds[index].toString()
+      const topic = topics.find(t => t.id === topicId)
+      const claimType = topic ? topic.name : 'Unknown'
+      const statusValue = statuses[index]
+      const status = statusValue === false ? 'pending' : 'approved'
 
       return {
         id: id.toString(),
         issuerAddress: issuerAddresses[index],
         claimType,
         status,
-      };
-    });
-  }, [data, topics]);
+      }
+    })
+  }, [data, topics])
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsRefreshing(false);
-  };
+    setIsRefreshing(true)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    setIsRefreshing(false)
+  }
 
-  const getStatusIcon = (status: ClaimRequest["status"]) => {
+  const getStatusIcon = (status: ClaimRequest['status']) => {
     switch (status) {
-      case "pending":
-        return <Clock className="h-4 w-4 text-warning" />;
-      case "approved":
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case "rejected":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'pending':
+        return <Clock className="h-4 w-4 text-warning" />
+      case 'approved':
+        return <CheckCircle className="h-4 w-4 text-success" />
+      case 'rejected':
+        return <XCircle className="h-4 w-4 text-red-500" />
       default:
-        return null;
+        return null
     }
-  };
+  }
 
-  const getStatusBadge = (status: ClaimRequest["status"]) => {
+  const getStatusBadge = (status: ClaimRequest['status']) => {
     switch (status) {
-      case "pending":
+      case 'pending':
         return (
           <Badge variant="outline" className="text-warning border-warning">
             Pending
           </Badge>
-        );
-      case "approved":
+        )
+      case 'approved':
         return (
           <Badge variant="outline" className="text-success border-success">
             Approved
           </Badge>
-        );
-      case "rejected":
+        )
+      case 'rejected':
         return (
           <Badge
             variant="outline"
@@ -148,11 +140,11 @@ export function MyClaimRequestsList() {
           >
             Rejected
           </Badge>
-        );
+        )
       default:
-        return null;
+        return null
     }
-  };
+  }
 
   if (requests.length === 0) {
     return (
@@ -166,7 +158,7 @@ export function MyClaimRequestsList() {
           </p>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -181,16 +173,16 @@ export function MyClaimRequestsList() {
           className="gap-2"
         >
           <RefreshCw
-            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
           />
           Refresh
         </Button>
       </div>
 
       <div className="space-y-3">
-        {requests.map((request) => {
+        {requests.map(request => {
           const ClaimIcon =
-            claimTypeIcons[request.claimType.toLowerCase()] || Shield;
+            claimTypeIcons[request.claimType.toLowerCase()] || Shield
 
           return (
             <Card
@@ -240,9 +232,9 @@ export function MyClaimRequestsList() {
                 </div>
               </CardContent>
             </Card>
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

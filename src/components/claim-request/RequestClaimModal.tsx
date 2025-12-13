@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -7,123 +7,116 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Plus, Shield, FileCheck, MapPin, Building, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useContractRead } from "wagmi";
-import ClaimTopicsABI from "../../../contracts-abi-files/ClaimTopicsABI.json";
-import IdentityABI from "../../../contracts-abi-files/IdentityABI.json";
-import { writeContract } from "@wagmi/core";
-import { CONTRACT_ADDRESSES } from "@/lib/config";
+} from '@/components/ui/select'
+import { Plus, Shield } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { useContractRead } from 'wagmi'
+import ClaimTopicsABI from '../../../contracts-abi-files/ClaimTopicsABI.json'
+import IdentityABI from '../../../contracts-abi-files/IdentityABI.json'
+import { writeContract } from '@wagmi/core'
+import { CONTRACT_ADDRESSES } from '@/lib/config'
 
 const ClaimTopicAddress =
-  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`;
-const IdentityAddress = CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`;
-
-interface ClaimType {
-  id: string;
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description: string;
-}
+  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`
+const IdentityAddress = CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`
 
 interface TrustedIssuer {
-  address: string;
-  name: string;
-  topics: string[];
+  address: string
+  name: string
+  topics: string[]
 }
 
 interface RequestClaimModalProps {
-  trustedIssuers?: TrustedIssuer[];
+  trustedIssuers?: TrustedIssuer[]
 }
 
 export function RequestClaimModal({
   trustedIssuers = [],
 }: RequestClaimModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedClaimType, setSelectedClaimType] = useState("");
-  const [issuerAddress, setIssuerAddress] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedClaimType, setSelectedClaimType] = useState('')
+  const [issuerAddress, setIssuerAddress] = useState('')
+  const [message, setMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const { data } = useContractRead({
     address: ClaimTopicAddress,
     abi: ClaimTopicsABI,
-    functionName: "getClaimTopicsWithNamesAndDescription",
+    functionName: 'getClaimTopicsWithNamesAndDescription',
     watch: true,
-  });
+  })
   const topics = useMemo(() => {
-    if (!data) return [];
-    const [ids, names, descriptions] = data as [bigint[], string[], string[]];
+    if (!data) return []
+    const [ids, names, descriptions] = data as [bigint[], string[], string[]]
 
     return ids.map((id, index) => ({
       id: id.toString(),
       name: names[index],
       description: descriptions[index],
-    }));
-  }, [data]);
-  console.log("topics", topics);
+    }))
+  }, [data])
+  console.log('topics', topics)
 
   const handleSubmit = async () => {
     if (!selectedClaimType || !issuerAddress) {
       toast({
-        title: "Missing Information",
-        description: "Please select a claim type and issuer address.",
-        variant: "destructive",
-      });
-      return;
+        title: 'Missing Information',
+        description: 'Please select a claim type and issuer address.',
+        variant: 'destructive',
+      })
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
     try {
       const result = await writeContract({
         address: IdentityAddress,
         abi: IdentityABI,
-        functionName: "submitClaimRequest",
+        functionName: 'submitClaimRequest',
         args: [issuerAddress, selectedClaimType], // Empty topics for now, can be updated later
-      });
+      })
       if (result) {
-        console.log("result", result);
+        console.log('result', result)
         toast({
-          title: "Claim Request Submitted",
-          description: "Your request has been sent to the issuer for review.",
-        });
+          title: 'Claim Request Submitted',
+          description: 'Your request has been sent to the issuer for review.',
+        })
 
         // Reset form
-        setSelectedClaimType("");
-        setIssuerAddress("");
-        setMessage("");
-        setIsOpen(false);
+        setSelectedClaimType('')
+        setIssuerAddress('')
+        setMessage('')
+        setIsOpen(false)
       }
     } catch (error) {
       toast({
-        title: "Request Failed",
-        description: "Failed to submit claim request. Please try again.",
-        variant: "destructive",
-      });
+        title: 'Request Failed',
+        description: 'Failed to submit claim request. Please try again.',
+        variant: 'destructive',
+      })
+      console.error('Error submitting claim request:', error)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
   const filteredIssuers = useMemo(() => {
-    if (!selectedClaimType) return trustedIssuers;
-    return trustedIssuers.filter((issuer) =>
+    if (!selectedClaimType) return trustedIssuers
+    return trustedIssuers.filter(issuer =>
       issuer.topics.includes(selectedClaimType)
-    );
-  }, [selectedClaimType, trustedIssuers]);
+    )
+  }, [selectedClaimType, trustedIssuers])
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -157,7 +150,7 @@ export function RequestClaimModal({
                 <SelectValue placeholder="Select the type of claim you need" />
               </SelectTrigger>
               <SelectContent>
-                {topics.map((topic) => (
+                {topics.map(topic => (
                   <SelectItem key={topic.id} value={topic.id}>
                     <div className="flex items-center gap-2">
                       {/* <claim.topics className="h-4 w-4" /> */}
@@ -183,7 +176,7 @@ export function RequestClaimModal({
                   <SelectValue placeholder="Select a trusted issuer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredIssuers.map((issuer) => (
+                  {filteredIssuers.map(issuer => (
                     <SelectItem key={issuer.address} value={issuer.address}>
                       <div className="flex flex-col">
                         <span className="font-semibold text-sm">
@@ -203,7 +196,7 @@ export function RequestClaimModal({
                 id="issuer-address"
                 placeholder="No issuer found for this topic. Enter manually..."
                 value={issuerAddress}
-                onChange={(e) => setIssuerAddress(e.target.value)}
+                onChange={e => setIssuerAddress(e.target.value)}
                 className="font-mono"
               />
             )}
@@ -247,8 +240,11 @@ export function RequestClaimModal({
               </>
             )}
           </Button>
+          {message && (
+            <p className="text-sm text-muted-foreground mt-2">{message}</p>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

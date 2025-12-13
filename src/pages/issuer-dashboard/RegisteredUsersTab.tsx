@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from 'react'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Users,
   User,
@@ -16,39 +16,35 @@ import {
   CheckCircle,
   Clock,
   Copy,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useContractRead, useAccount } from "wagmi";
-import { readContract } from "@wagmi/core";
-import IdentityRegistryABI from "../../../contracts-abi-files/IdentityRegistryABI.json";
-import IdentityABI from "../../../contracts-abi-files/IdentityABI.json";
-import { CONTRACT_ADDRESSES } from "@/lib/config";
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { useContractRead } from 'wagmi'
+import IdentityRegistryABI from '../../../contracts-abi-files/IdentityRegistryABI.json'
+import { CONTRACT_ADDRESSES } from '@/lib/config'
 
 const IdentityRegistryAddress =
-  CONTRACT_ADDRESSES.IDENTITY_REGISTRY_ADDRESS as `0x${string}`;
+  CONTRACT_ADDRESSES.IDENTITY_REGISTRY_ADDRESS as `0x${string}`
 
 interface RegisteredUser {
-  walletAddress: string;
-  identityAddress: string;
-  countryCode: string;
-  claimsCount: number;
-  isKYCCompleted: boolean;
-  registrationDate: string;
+  walletAddress: string
+  identityAddress: string
+  countryCode: string
+  claimsCount: number
+  isKYCCompleted: boolean
+  registrationDate: string
 }
 
 export function RegisteredUsersTab() {
   // const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  const { address } = useAccount();
-  const { address: currentUser } = useAccount();
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   const UsersData = useContractRead({
     address: IdentityRegistryAddress,
     abi: IdentityRegistryABI,
-    functionName: "getAllUsers",
+    functionName: 'getAllUsers',
     watch: true,
-  });
+  })
 
   const registeredUsers: RegisteredUser[] = useMemo(() => {
     if (
@@ -56,75 +52,77 @@ export function RegisteredUsersTab() {
       UsersData.data.length === 3 &&
       Array.isArray(UsersData.data[0])
     ) {
-      const [wallets, identities, countries] = UsersData.data;
+      const [wallets, identities, countries] = UsersData.data
 
       return wallets.map((wallet: string, index: number) => ({
         walletAddress: wallet,
         identityAddress: identities[index],
-        countryCode: countries[index]?.toString() || "N/A",
+        countryCode: countries[index]?.toString() || 'N/A',
         claimsCount: 0, // You can update this later by reading Identity contract
         isKYCCompleted: false, // You can dynamically check this using isClaimValid
         registrationDate: new Date().toISOString(), // Optional placeholder
-      }));
+      }))
     }
-    return [];
-  }, [UsersData.data]);
+    return []
+  }, [UsersData.data])
 
   const handleRefreshUsers = async () => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       toast({
-        title: "Users Refreshed",
-        description: "Successfully fetched latest user registrations",
-        variant: "default",
-      });
+        title: 'Users Refreshed',
+        description: 'Successfully fetched latest user registrations',
+        variant: 'default',
+      })
     } catch (error) {
       toast({
-        title: "Refresh Failed",
-        description: "Failed to fetch user registrations. Please try again.",
-        variant: "destructive",
-      });
+        title: 'Refresh Failed',
+        description: 'Failed to fetch user registrations. Please try again.',
+        variant: 'destructive',
+      })
+      console.log('Error refreshing users:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleViewUserDetails = (user: RegisteredUser) => {
     // Implement user details modal or navigation
     toast({
-      title: "User Details",
+      title: 'User Details',
       description: `Viewing details for ${user.walletAddress.slice(0, 8)}...`,
-      variant: "default",
-    });
-  };
+      variant: 'default',
+    })
+  }
 
   const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+    return new Date(dateString).toLocaleDateString()
+  }
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text)
       toast({
-        title: "Address Copied",
-        description: "Address has been copied to clipboard",
-        variant: "default",
-      });
+        title: 'Address Copied',
+        description: 'Address has been copied to clipboard',
+        variant: 'default',
+      })
     } catch (error) {
       toast({
-        title: "Copy Failed",
-        description: "Failed to copy address to clipboard",
-        variant: "destructive",
-      });
+        title: 'Copy Failed',
+        description: 'Failed to copy address to clipboard',
+        variant: 'destructive',
+      })
+      console.log('Error copying to clipboard:', error)
     }
-  };
+  }
 
   const getKYCStatusBadge = (isCompleted: boolean) => {
     return isCompleted ? (
@@ -137,8 +135,8 @@ export function RegisteredUsersTab() {
         <Clock className="h-3 w-3 mr-1" />
         KYC Pending
       </Badge>
-    );
-  };
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -155,7 +153,7 @@ export function RegisteredUsersTab() {
           disabled={isLoading}
           className="gap-2"
         >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
@@ -265,5 +263,5 @@ export function RegisteredUsersTab() {
         )}
       </div>
     </div>
-  );
+  )
 }

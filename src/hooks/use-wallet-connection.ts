@@ -85,12 +85,14 @@ export function useWalletConnection() {
       } else {
         // Connect using injected wallet (MetaMask, Coinbase Wallet, Rabby, etc.)
         const injectedConnector = connectors.find(
-          (c) => c.id === 'injected' || c.type === 'injected'
+          c => c.id === 'injected' || c.type === 'injected'
         )
         if (injectedConnector) {
           connect({ connector: injectedConnector })
         } else {
-          throw new Error('No injected wallet found. Please install MetaMask or another wallet extension.')
+          throw new Error(
+            'No injected wallet found. Please install MetaMask or another wallet extension.'
+          )
         }
       }
     } catch (error) {

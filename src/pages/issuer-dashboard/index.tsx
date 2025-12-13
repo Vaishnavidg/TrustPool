@@ -1,23 +1,23 @@
-import { Shield, FileText } from "lucide-react";
-import { IssueClaimsTab } from "./IssueClaimsTab";
-import { ClaimRequestsTab } from "./ClaimRequestsTab";
-import { DashboardLayout } from "@/components/ui/dashboard-layout";
+import { Shield, FileText } from 'lucide-react'
+import { IssueClaimsTab } from './IssueClaimsTab'
+import { ClaimRequestsTab } from './ClaimRequestsTab'
+import { DashboardLayout } from '@/components/ui/dashboard-layout'
 
 export function IssuerDashboard() {
   const tabs = [
     {
-      value: "claim-requests",
-      label: "Requests",
+      value: 'claim-requests',
+      label: 'Requests',
       icon: Shield,
-      content: <ClaimRequestsTab />
+      content: <ClaimRequestsTab />,
     },
     {
-      value: "issue-claims",
-      label: "Issue Claims",
+      value: 'issue-claims',
+      label: 'Issue Claims',
       icon: FileText,
-      content: <IssueClaimsTab />
-    }
-  ];
+      content: <IssueClaimsTab />,
+    },
+  ]
 
   return (
     <DashboardLayout
@@ -29,5 +29,5 @@ export function IssuerDashboard() {
       tabs={tabs}
       defaultTab="claim-requests"
     />
-  );
+  )
 }

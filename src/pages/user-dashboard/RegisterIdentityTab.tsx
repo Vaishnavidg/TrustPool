@@ -1,85 +1,86 @@
-import { useState } from "react";
+import { useState } from 'react'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Shield, Info, CheckCircle, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { COUNTRIES, EDUCATIONAL_MESSAGES } from "@/lib/config";
-import { useAccount } from "wagmi";
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Shield, Info, CheckCircle, AlertTriangle } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { COUNTRIES } from '@/lib/config'
+import { useAccount } from 'wagmi'
 
 export function RegisterIdentityTab() {
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
   const [registrationForm, setRegistrationForm] = useState({
-    country: "",
-    investorType: "",
-    identityAddress: "",
-  });
-  const { address } = useAccount();
-  const { toast } = useToast();
+    country: '',
+    investorType: '',
+    identityAddress: '',
+  })
+  const { address } = useAccount()
+  const { toast } = useToast()
 
   const handleRegisterIdentity = async () => {
     if (!registrationForm.country || !registrationForm.investorType) {
       toast({
-        title: "Missing Information",
-        description: "Please select both country and investor type",
-        variant: "destructive",
-      });
-      return;
+        title: 'Missing Information',
+        description: 'Please select both country and investor type',
+        variant: 'destructive',
+      })
+      return
     }
 
     if (!address) {
       toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet first",
-        variant: "destructive",
-      });
-      return;
+        title: 'Wallet Not Connected',
+        description: 'Please connect your wallet first',
+        variant: 'destructive',
+      })
+      return
     }
 
-    setIsRegistering(true);
+    setIsRegistering(true)
 
     try {
       // Simulate identity registration
-      await new Promise((resolve) => setTimeout(resolve, 2500));
+      await new Promise(resolve => setTimeout(resolve, 2500))
 
-      setIsRegistered(true);
+      setIsRegistered(true)
 
       toast({
-        title: "Identity Registered Successfully",
+        title: 'Identity Registered Successfully',
         description:
-          "Your identity has been registered in the identity registry",
-        variant: "default",
-      });
+          'Your identity has been registered in the identity registry',
+        variant: 'default',
+      })
     } catch (error) {
       toast({
-        title: "Registration Failed",
-        description: "Failed to register identity. Please try again.",
-        variant: "destructive",
-      });
+        title: 'Registration Failed',
+        description: 'Failed to register identity. Please try again.',
+        variant: 'destructive',
+      })
+      console.log('Registration error:', error)
     } finally {
-      setIsRegistering(false);
+      setIsRegistering(false)
     }
-  };
+  }
 
   const selectedCountry = COUNTRIES.find(
-    (c) => c.code === registrationForm.country
-  );
+    c => c.code === registrationForm.country
+  )
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -113,7 +114,7 @@ export function RegisterIdentityTab() {
                   id="identity-address"
                   placeholder="0x... (from previous step)"
                   value={registrationForm.identityAddress}
-                  onChange={(e) =>
+                  onChange={e =>
                     setRegistrationForm({
                       ...registrationForm,
                       identityAddress: e.target.value,
@@ -126,7 +127,7 @@ export function RegisterIdentityTab() {
                 <Label htmlFor="country">Country of Residence</Label>
                 <Select
                   value={registrationForm.country}
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     setRegistrationForm({ ...registrationForm, country: value })
                   }
                 >
@@ -134,7 +135,7 @@ export function RegisterIdentityTab() {
                     <SelectValue placeholder="Select your country" />
                   </SelectTrigger>
                   <SelectContent>
-                    {COUNTRIES.map((country) => (
+                    {COUNTRIES.map(country => (
                       <SelectItem key={country.code} value={country.code}>
                         {country.name}
                       </SelectItem>
@@ -147,7 +148,7 @@ export function RegisterIdentityTab() {
                 <Label htmlFor="investor-type">Investor Type</Label>
                 <Select
                   value={registrationForm.investorType}
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     setRegistrationForm({
                       ...registrationForm,
                       investorType: value,
@@ -175,7 +176,7 @@ export function RegisterIdentityTab() {
                 variant="default"
                 disabled={isRegistering || !address}
               >
-                {isRegistering ? "Registering..." : "Register Identity"}
+                {isRegistering ? 'Registering...' : 'Register Identity'}
               </Button>
 
               {!address && (
@@ -267,5 +268,5 @@ export function RegisterIdentityTab() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
