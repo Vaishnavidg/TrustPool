@@ -90,7 +90,7 @@ export function TrustedIssuersTab() {
                 args: [address],
               }),
             ])
-
+            console.log('Fetched issuer data successfully')
             return {
               address: address.toString(),
               name: names[index].toString(),
@@ -113,7 +113,9 @@ export function TrustedIssuersTab() {
       const trustedIssuerResults = results.map(issuer => ({
         ...issuer,
         name: issuer.name.toString(),
-        topics: Array.isArray(issuer.topics) ? issuer.topics.map(t => t.toString()) : [],
+        topics: Array.isArray(issuer.topics)
+          ? issuer.topics.map(t => t.toString())
+          : [],
       })) as TrustedIssuer[]
 
       setTrustedIssuers(trustedIssuerResults)

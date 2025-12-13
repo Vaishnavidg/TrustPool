@@ -1,78 +1,73 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   FileText,
   CheckCircle,
   Clock,
   AlertTriangle,
   RefreshCw,
-} from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useContractRead, useAccount } from "wagmi";
-import { readContract } from "@wagmi/core";
-import { hexToString } from "viem";
-import IdentityABI from "../../../contracts-abi-files/IdentityABI.json";
-import ClaimTopicsABI from "../../../contracts-abi-files/ClaimTopicsABI.json";
-import TrustedIssuersABI from "../../../contracts-abi-files/TrustedIssuersABI.json";
-import { CONTRACT_ADDRESSES } from "@/lib/config";
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { useContractRead } from 'wagmi'
+import { readContract } from '@wagmi/core'
+import { hexToString } from 'viem'
+import IdentityABI from '../../../contracts-abi-files/IdentityABI.json'
+import ClaimTopicsABI from '../../../contracts-abi-files/ClaimTopicsABI.json'
+import TrustedIssuersABI from '../../../contracts-abi-files/TrustedIssuersABI.json'
+import { CONTRACT_ADDRESSES } from '@/lib/config'
 
 const IdentityContractAddress =
-  CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`;
+  CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`
 const ClaimTopicAddress =
-  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`;
+  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`
 const TrustedIssuersRegistryAddress =
-  CONTRACT_ADDRESSES.TRUST_ISSUER_REGISTRY_ADDRESS as `0x${string}`;
+  CONTRACT_ADDRESSES.TRUST_ISSUER_REGISTRY_ADDRESS as `0x${string}`
 
 interface UserClaim {
-  topicId: string;
-  topicName: string;
-  issuer: string;
-  issuedAt: string;
-  signature: string;
-  isValid: boolean;
-  expiresAt?: string;
-  data?: string;
-  validTo?: number;
+  topicId: string
+  topicName: string
+  issuer: string
+  issuedAt: string
+  signature: string
+  isValid: boolean
+  expiresAt?: string
+  data?: string
+  validTo?: number
 }
 
 export function MyClaimsTab() {
-  const [userClaims, setUserClaims] = useState<UserClaim[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const { toast } = useToast();
-  const { address: currentUser } = useAccount();
+  const [userClaims, setUserClaims] = useState<UserClaim[]>([])
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const { toast } = useToast()
 
-  const {
-    data: rawClaims,
-    isLoading,
-    refetch: refetchAllClaims,
-  } = useContractRead({
+  const { data: rawClaims, refetch: refetchAllClaims } = useContractRead({
     address: IdentityContractAddress,
     abi: IdentityABI,
-    functionName: "getAllClaims",
+    functionName: 'getAllClaims',
     watch: true,
-  });
+  })
 
   const { data: topicData } = useContractRead({
     address: ClaimTopicAddress,
     abi: ClaimTopicsABI,
-    functionName: "getClaimTopicsWithNamesAndDescription",
+    functionName: 'getClaimTopicsWithNamesAndDescription',
     watch: true,
-  });
+  })
 
   useEffect(() => {
     const fetchUserClaims = async () => {
       if (!rawClaims || !topicData) {
-        setUserClaims([]);
-        return;
+        setUserClaims([])
+        return
       }
 
       const [topics, issuers, signatures, datas, validsTo] = rawClaims as [
@@ -80,51 +75,50 @@ export function MyClaimsTab() {
         string[],
         string[],
         string[],
-        bigint[]
-      ];
+        bigint[],
+      ]
 
-      const [topicIds, topicNames] = topicData as [bigint[], string[]];
+      const [topicIds, topicNames] = topicData as [bigint[], string[]]
 
       const enrichedClaims = await Promise.all(
         topics.map(async (topic, index) => {
-          const topicId = topic.toString();
-          const validTo = Number(validsTo[index]);
+          const topicId = topic.toString()
+          const validTo = Number(validsTo[index])
 
           // Get topic name
-          const topicIndex = topicIds.findIndex(
-            (id) => id.toString() === topicId
-          );
+          const topicIndex = topicIds.findIndex(id => id.toString() === topicId)
           const topicName =
-            topicIndex >= 0 ? topicNames[topicIndex] : `Topic ${topicId}`;
+            topicIndex >= 0 ? topicNames[topicIndex] : `Topic ${topicId}`
 
           // Check validity
-          let isValid: boolean = false;
+          let isValid: boolean = false
           try {
             const valid = await readContract({
               address: IdentityContractAddress,
               abi: IdentityABI,
-              functionName: "isClaimValid",
+              functionName: 'isClaimValid',
               args: [topic],
-            });
-            isValid = valid as boolean;
+            })
+            isValid = valid as boolean
           } catch (e) {
-            console.error(`Validity check failed for topic ${topicId}`, e);
+            console.error(`Validity check failed for topic ${topicId}`, e)
           }
 
           // Get issuer name
-          let issuerName = issuers[index];
+          let issuerName = issuers[index]
           try {
             const name = await readContract({
               address: TrustedIssuersRegistryAddress,
               abi: TrustedIssuersABI,
-              functionName: "getIssuerName",
+              functionName: 'getIssuerName',
               args: [issuers[index]],
-            });
+            })
             issuerName =
-              (name as string) !== "Not Trusted Issuer"
+              (name as string) !== 'Not Trusted Issuer'
                 ? (name as string)
-                : issuers[index];
+                : issuers[index]
           } catch (e) {
+            console.log(e)
             // Use address if name lookup fails
           }
 
@@ -140,93 +134,95 @@ export function MyClaimsTab() {
             ).toISOString(), // estimated
             expiresAt: new Date(validTo * 1000).toISOString(),
             isValid,
-          };
+          }
         })
-      );
+      )
 
-      setUserClaims(enrichedClaims);
-    };
+      setUserClaims(enrichedClaims)
+    }
 
-    fetchUserClaims();
-  }, [rawClaims, topicData]);
+    fetchUserClaims()
+  }, [rawClaims, topicData])
 
   const handleRefreshClaims = async () => {
-    setIsRefreshing(true);
+    setIsRefreshing(true)
 
     try {
-      const result = await refetchAllClaims();
-      if (result.status === "success") {
+      const result = await refetchAllClaims()
+      if (result.status === 'success') {
         toast({
-          title: "Claims Refreshed",
-          description: "Successfully fetched latest claims from blockchain",
-          variant: "default",
-        });
+          title: 'Claims Refreshed',
+          description: 'Successfully fetched latest claims from blockchain',
+          variant: 'default',
+        })
       } else {
         toast({
-          title: "Refresh Failed",
-          description: "Failed to fetch claims. Please try again.",
-          variant: "destructive",
-        });
+          title: 'Refresh Failed',
+          description: 'Failed to fetch claims. Please try again.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       toast({
-        title: "Refresh Failed",
-        description: "Failed to fetch claims. Please try again.",
-        variant: "destructive",
-      });
+        title: 'Refresh Failed',
+        description: 'Failed to fetch claims. Please try again.',
+        variant: 'destructive',
+      })
+      console.error('Error refreshing claims:', error)
     } finally {
-      setIsRefreshing(false);
+      setIsRefreshing(false)
     }
-  };
+  }
 
-  const handleVerifyClaim = async (claimIndex: number) => {
+  const handleVerifyClaim = async () => {
     try {
       // Simulate claim verification
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       toast({
-        title: "Claim Verified",
-        description: "Claim signature and validity confirmed",
-        variant: "default",
-      });
+        title: 'Claim Verified',
+        description: 'Claim signature and validity confirmed',
+        variant: 'default',
+      })
     } catch (error) {
       toast({
-        title: "Verification Failed",
-        description: "Failed to verify claim signature",
-        variant: "destructive",
-      });
+        title: 'Verification Failed',
+        description: 'Failed to verify claim signature',
+        variant: 'destructive',
+      })
+      console.error('Error verifying claim:', error)
     }
-  };
+  }
 
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+  // const formatAddress = (addr: string) => {
+  //   return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  // }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+    return new Date(dateString).toLocaleDateString()
+  }
 
   const getClaimStatusBadge = (claim: UserClaim) => {
     if (!claim.isValid) {
-      return <Badge variant="destructive">Invalid</Badge>;
+      return <Badge variant="destructive">Invalid</Badge>
     }
 
     if (claim.expiresAt && new Date(claim.expiresAt) < new Date()) {
-      return <Badge variant="destructive">Expired</Badge>;
+      return <Badge variant="destructive">Expired</Badge>
     }
 
     return (
       <Badge className="bg-success/80 text-success-foreground">Valid</Badge>
-    );
-  };
+    )
+  }
 
   const getDaysUntilExpiry = (expiryDate: string) => {
     const days = Math.floor(
       (new Date(expiryDate).getTime() - new Date().getTime()) /
         (1000 * 60 * 60 * 24)
-    );
-    return days;
-  };
+    )
+    return days
+  }
 
   return (
     <div className="space-y-6">
@@ -244,7 +240,7 @@ export function MyClaimsTab() {
           className="gap-2"
         >
           <RefreshCw
-            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
           />
           Refresh
         </Button>
@@ -315,7 +311,7 @@ export function MyClaimsTab() {
 
               <div className="flex gap-2 pt-2">
                 <Button
-                  onClick={() => handleVerifyClaim(index)}
+                  onClick={() => handleVerifyClaim()}
                   variant="outline"
                   size="sm"
                   className="gap-2"
@@ -353,5 +349,5 @@ export function MyClaimsTab() {
         )}
       </div>
     </div>
-  );
+  )
 }
