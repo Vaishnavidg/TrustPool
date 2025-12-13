@@ -29,7 +29,7 @@ export const Navigation = ({
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-primary" />
               <span className="text-xl font-bold text-foreground">
-                ERC-3643 Playground
+                TrustPool
               </span>
             </div>
 
