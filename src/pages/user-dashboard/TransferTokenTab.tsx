@@ -173,11 +173,15 @@ export function TransferTokenTab() {
           variant: 'default',
         })
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('error', error)
       const errorMessage =
-        error?.shortMessage ||
-        error?.message ||
+        (error && typeof error === 'object' && 'shortMessage' in error
+          ? (error as { shortMessage: string }).shortMessage
+          : null) ||
+        (error && typeof error === 'object' && 'message' in error
+          ? (error as { message: string }).message
+          : null) ||
         'Transfer failed. Please check compliance or input values.'
       setErrorMessage(errorMessage)
       toast({

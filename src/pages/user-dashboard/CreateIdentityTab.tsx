@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/use-toast'
 import { CONTRACT_ADDRESSES, EDUCATIONAL_MESSAGES } from '@/lib/config'
 import { writeContract } from '@wagmi/core'
 import IdentityABI from '../../../contracts-abi-files/IdentityABI.json'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error - Bytecode file is JavaScript, no type definitions available
 import { IdentityBytecode } from '../../../contracts-abi-files/Identity_Bytecode.js'
 import IdentityRegistryABI from '../../../contracts-abi-files/IdentityRegistryABI.json'
 import {
@@ -37,14 +39,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Label } from '@/components/ui/label.js'
+import { Label } from '@/components/ui/label'
 
 const IdentityRegistryAddress =
   CONTRACT_ADDRESSES.IDENTITY_REGISTRY_ADDRESS as `0x${string}`
 
 export function CreateIdentityTab() {
   const [isDeploying, setIsDeploying] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
   const [deploymentError, setDeploymentError] = useState<string | null>(null)
   const { address } = useAccount()
   const { toast } = useToast()
@@ -62,13 +63,19 @@ export function CreateIdentityTab() {
   })
 
   // Check if the identity address is valid (not zero address)
-  const isValidIdentityAddress =
+  const isValidIdentityAddress = Boolean(
     identityFromRegistry.data &&
     identityFromRegistry.data !== '0x0000000000000000000000000000000000000000'
-
-  const [identityAddress, setIdentityAddress] = useState<string | null>(
-    isValidIdentityAddress ? (identityFromRegistry.data as string) : null
   )
+
+  const [identityAddress, setIdentityAddress] = useState<string | null>(null)
+
+  // Update identity address when registry data changes
+  useEffect(() => {
+    if (isValidIdentityAddress && identityFromRegistry.data) {
+      setIdentityAddress(identityFromRegistry.data as string)
+    }
+  }, [identityFromRegistry.data, isValidIdentityAddress])
 
   const handleDeployIdentity = async () => {
     if (!address) {
@@ -82,6 +89,26 @@ export function CreateIdentityTab() {
 
     setIsDeploying(true)
     setDeploymentError(null)
+
+    if (!walletClient) {
+      toast({
+        title: 'Wallet Client Not Available',
+        description: 'Please connect your wallet first',
+        variant: 'destructive',
+      })
+      setIsDeploying(false)
+      return
+    }
+
+    if (!chain) {
+      toast({
+        title: 'Network Not Available',
+        description: 'Please ensure you are connected to a network',
+        variant: 'destructive',
+      })
+      setIsDeploying(false)
+      return
+    }
 
     try {
       // Deploy Identity contract using TokenFactory
@@ -98,16 +125,20 @@ export function CreateIdentityTab() {
         })
         const contractAddress = receipt.contractAddress
         console.log('hash', hash)
-        setIdentityAddress(contractAddress)
-
-        toast({
-          title: 'Identity Created Successfully',
-          description: `Identity contract deployed at ${contractAddress.slice(
-            0,
-            6
-          )}...${contractAddress.slice(-4)}`,
-          variant: 'default',
-        })
+        
+        if (contractAddress) {
+          setIdentityAddress(contractAddress)
+          toast({
+            title: 'Identity Created Successfully',
+            description: `Identity contract deployed at ${contractAddress.slice(
+              0,
+              6
+            )}...${contractAddress.slice(-4)}`,
+            variant: 'default',
+          })
+        } else {
+          throw new Error('Contract address not found in receipt')
+        }
       }
     } catch (error: any) {
       console.error('Deployment error:', error)
@@ -138,7 +169,6 @@ export function CreateIdentityTab() {
       })
       if (result) {
         console.log('result', result)
-        setIsConnected(true)
         toast({
           title: 'Identity Connected',
           description: 'Successfully connected to your identity contract',
