@@ -7,6 +7,9 @@ import { useState } from 'react'
 import { useWalletConnection } from '@/hooks/use-wallet-connection'
 import { Navigation } from '@/components/custom-components/Navigations'
 import Overview from './Overview'
+import { AdminDashboard } from './admin-dashboard'
+import { IssuerDashboard } from './issuer-dashboard'
+import { UserDashboard } from './user-dashboard'
 
 type PageType = 'overview' | 'admin' | 'user' | 'issuer'
 
@@ -22,16 +25,16 @@ const Index = () => {
 
   const renderCurrentPage = () => {
     switch (currentPage) {
-      // case 'admin':
-      //   return isConnected && isAdmin ? <AdminDashboard /> : <Overview />
-      // case 'issuer':
-      //   return isConnected && isTrustedIssuer ? (
-      //     <IssuerDashboard />
-      //   ) : (
-      //     <Overview />
-      //   )
-      // case 'user':
-      //   return isConnected ? <UserDashboard /> : <Overview />
+      case 'admin':
+        return isConnected && isAdmin ? <AdminDashboard /> : <Overview />
+      case 'issuer':
+        return isConnected && isTrustedIssuer ? (
+          <IssuerDashboard />
+        ) : (
+          <Overview />
+        )
+      case 'user':
+        return isConnected ? <UserDashboard /> : <Overview />
       default:
         return <Overview />
     }

@@ -1,0 +1,422 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Plus,
+  Users,
+  Info,
+  CheckCircle,
+  Shield,
+  ShieldCheck,
+} from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { readContract, writeContract } from '@wagmi/core'
+import TrustedIssuersABI from '../../../contracts-abi-files/TrustedIssuersABI.json'
+import { useContractRead } from 'wagmi'
+import ClaimTopicsABI from '../../../contracts-abi-files/ClaimTopicsABI.json'
+import IdentityABI from '../../../contracts-abi-files/IdentityABI.json'
+import { CONTRACT_ADDRESSES } from '@/lib/config'
+
+interface TrustedIssuer {
+  address: string
+  name: string
+  topics: string[]
+  isAuthorized: boolean
+}
+const TrustedIssuersRegistryAddress =
+  CONTRACT_ADDRESSES.TRUST_ISSUER_REGISTRY_ADDRESS as `0x${string}`
+const ClaimTopicAddress =
+  CONTRACT_ADDRESSES.CLAIM_TOPIC_REGISTRY_ADDRESS as `0x${string}`
+const IdentityAddress = CONTRACT_ADDRESSES.IDENTITY_ADDRESS as `0x${string}`
+
+export function TrustedIssuersTab() {
+  const { data } = useContractRead({
+    address: ClaimTopicAddress,
+    abi: ClaimTopicsABI,
+    functionName: 'getClaimTopicsWithNamesAndDescription',
+    watch: true,
+  })
+  const topics = useMemo(() => {
+    if (!data) return []
+    const [ids, names, descriptions] = data as [bigint[], string[], string[]]
+
+    return ids.map((id, index) => ({
+      id: id.toString(),
+      name: names[index].toString(),
+      description: descriptions[index],
+    }))
+  }, [data])
+  console.log('topics', topics)
+
+  const { data: issuers } = useContractRead({
+    address: TrustedIssuersRegistryAddress,
+    abi: TrustedIssuersABI,
+    functionName: 'getAllIssuersDetails',
+    watch: true,
+  })
+  const [trustedIssuers, setTrustedIssuers] = useState<TrustedIssuer[]>([])
+
+  useEffect(() => {
+    const fetchTrustedIssuers = async () => {
+      if (!issuers) return
+
+      const [addresses, names] = issuers as [string[], bigint[], string[]]
+
+      const results = await Promise.all(
+        addresses.map(async (address, index) => {
+          try {
+            const [topicsData, isAuthorizedData] = await Promise.all([
+              readContract({
+                address: TrustedIssuersRegistryAddress as `0x${string}`,
+                abi: TrustedIssuersABI.filter(item => item.type === 'function'),
+                functionName: 'getTopicsForIssuer',
+                args: [address],
+              }),
+              readContract({
+                address: IdentityAddress as `0x${string}`,
+                abi: IdentityABI.filter(item => item.type === 'function'),
+                functionName: 'isIssuerAuthorized',
+                args: [address],
+              }),
+            ])
+
+            return {
+              address: address.toString(),
+              name: names[index].toString(),
+              topics: (topicsData as bigint[]).map(t => t.toString()),
+              isAuthorized: isAuthorizedData as boolean,
+            }
+          } catch (error) {
+            console.error(`Failed to fetch data for issuer ${address}`, error)
+            return {
+              address: address.toString(),
+              name: names[index],
+              topics: [],
+              isAuthorized: false,
+            }
+          }
+        })
+      )
+
+      // Ensure all issuers have the correct TrustedIssuer shape (name as string, topics as string[])
+      const trustedIssuerResults = results.map(issuer => ({
+        ...issuer,
+        name: issuer.name.toString(),
+        topics: Array.isArray(issuer.topics) ? issuer.topics.map(t => t.toString()) : [],
+      })) as TrustedIssuer[]
+
+      setTrustedIssuers(trustedIssuerResults)
+    }
+
+    fetchTrustedIssuers()
+  }, [issuers])
+
+  console.log('trustedIssuers', trustedIssuers)
+
+  const [newIssuer, setNewIssuer] = useState({
+    address: '',
+    name: '',
+    topics: [] as string[],
+  })
+  const { toast } = useToast()
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const handleTopicChange = (topicId: string, checked: boolean) => {
+    if (checked) {
+      setNewIssuer({ ...newIssuer, topics: [...newIssuer.topics, topicId] })
+    } else {
+      setNewIssuer({
+        ...newIssuer,
+        topics: newIssuer.topics.filter(id => id !== topicId),
+      })
+    }
+  }
+
+  const handleAddIssuer = async () => {
+    console.log('newIssuer', newIssuer)
+    setErrorMessage('')
+    if (!newIssuer.address || !newIssuer.name) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please provide both issuer address and name',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (newIssuer.topics.length === 0) {
+      toast({
+        title: 'No Topics Selected',
+        description: 'Please select at least one claim topic',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    try {
+      const topicIds = newIssuer.topics.map(id => BigInt(id))
+
+      console.log('topicIds', topicIds)
+      const result = await writeContract({
+        address: TrustedIssuersRegistryAddress,
+        abi: TrustedIssuersABI,
+        functionName: 'addTrustedIssuer',
+        args: [newIssuer.address, newIssuer.name, topicIds],
+      })
+
+      console.log('Trusted Issuers Added successfully', result.hash)
+      toast({
+        title: 'Trusted Issuer Added',
+        description: `Issuer "${newIssuer.name}" has been registered`,
+        variant: 'default',
+      })
+      setNewIssuer({ address: '', name: '', topics: [] })
+    } catch (error) {
+      console.log('error', error)
+      const errorMessage =
+        typeof error === 'object' && error !== null && 'shortMessage' in error
+          ? error.shortMessage
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? error.message
+            : 'Failed to add topic.'
+      setErrorMessage(String(errorMessage))
+      toast({
+        title: 'Transfer Failed',
+        description: 'Transaction failed. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+  const handleAuthorizeIssuer = async (
+    issuerAddress: string,
+    issuerName: string
+  ) => {
+    try {
+      const result = await writeContract({
+        address: IdentityAddress,
+        abi: IdentityABI,
+        functionName: 'setIssuerAuthorization',
+        args: [issuerAddress, true], // Empty topics for now, can be updated later
+      })
+
+      console.log('Issuer authorized successfully', result.hash)
+      toast({
+        title: 'Issuer Authorized',
+        description: `${issuerName} has been authorized as a claim issuer`,
+        variant: 'default',
+      })
+
+      // Refresh the data
+      const updatedIssuers = trustedIssuers.map(issuer =>
+        issuer.address === issuerAddress
+          ? { ...issuer, isAuthorized: true }
+          : issuer
+      )
+      setTrustedIssuers(updatedIssuers)
+    } catch (error) {
+      console.log('Authorization error', error)
+      const errorMessage: any =
+        typeof error === 'object' && error !== null && 'shortMessage' in error
+          ? error.shortMessage
+          : typeof error === 'object' && error !== null && 'message' in error
+            ? error.message
+            : 'Failed to add topic.'
+      if (errorMessage.includes('already exists')) {
+        toast({
+          title: 'Already Authorized',
+          description: 'This issuer is already authorized',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Authorization Failed',
+          description: 'Transaction failed. Please try again.',
+          variant: 'destructive',
+        })
+      }
+    }
+  }
+
+  const formatAddress = (addr: string) => {
+    return `${addr.slice(0, 10)}.......${addr.slice(-6)}`
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <Card className="bg-gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Add Trusted Issuer
+          </CardTitle>
+          <CardDescription>
+            Register trusted claim issuers for the compliance framework
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <Info className="h-4 w-4 text-primary mt-0.5" />
+            <p className="text-sm text-muted-foreground">
+              Trusted issuers are authorized to provide claims for specific
+              topics. Only claims from trusted issuers are valid for compliance.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="issuer-address">Issuer Address</Label>
+              <Input
+                id="issuer-address"
+                placeholder="0x..."
+                value={newIssuer.address}
+                onChange={e =>
+                  setNewIssuer({ ...newIssuer, address: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="issuer-name">Issuer Name</Label>
+              <Input
+                id="issuer-name"
+                placeholder="e.g., KYC Provider Inc"
+                value={newIssuer.name}
+                onChange={e =>
+                  setNewIssuer({ ...newIssuer, name: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <Label>Authorized Claim Topics</Label>
+              <div className="space-y-2 mt-2">
+                {topics.map(topic => (
+                  <div key={topic.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`topic-${topic.id}`}
+                      checked={newIssuer.topics.includes(topic.id)}
+                      onCheckedChange={checked =>
+                        handleTopicChange(topic.id, checked as boolean)
+                      }
+                    />
+                    <Label htmlFor={`topic-${topic.id}`} className="text-sm">
+                      {topic.name} (ID: {topic.id})
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              onClick={handleAddIssuer}
+              className="w-full"
+              variant="default"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Trusted Issuer
+            </Button>
+          </div>
+          {errorMessage && (
+            <p className="text-sm text-red-500 text-center">{errorMessage}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-gradient-card shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Trusted Issuers
+          </CardTitle>
+          <CardDescription>Registered trusted claim issuers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {trustedIssuers.map((issuer, index) => (
+              <div
+                key={index}
+                className="p-4 rounded-lg border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{issuer.name}</h4>
+                    <Badge variant="outline" className="text-xs">
+                      {formatAddress(issuer.address)}
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {issuer.topics.map(topicId => {
+                      const topic = topics.find(t => t.id === topicId)
+                      return (
+                        <Badge
+                          key={topicId}
+                          className="text-xs bg-success/70 text-success-foreground"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {topic?.name || `Topic ${topicId}`}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Claim Issuer Status:
+                      </span>
+                      {issuer.isAuthorized ? (
+                        <Badge className="bg-success/20 text-success hover:bg-success/30">
+                          <ShieldCheck className="h-3 w-3 mr-1" />
+                          Authorized
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="secondary"
+                          className="bg-warning/20 text-warning"
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          Not Authorized
+                        </Badge>
+                      )}
+                    </div>
+
+                    {!issuer.isAuthorized && (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          handleAuthorizeIssuer(issuer.address, issuer.name)
+                        }
+                        className="bg-success hover:bg-success/90 text-success-foreground"
+                      >
+                        <Shield className="h-3 w-3 mr-1" />
+                        Authorize Issuer
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {trustedIssuers.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No trusted issuers registered yet</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
