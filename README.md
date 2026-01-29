@@ -398,10 +398,7 @@ This project is licensed under the MIT License.
 - **Monad** - High-performance blockchain
 - **shadcn/ui** - Beautiful UI components
 
-## 📞 Support
+Video-> https://drive.google.com/file/d/1y1DPAtTM--rRMRLeFwHHsjYHlYlWLv20/view?usp=sharing
 
-For issues, questions, or contributions, please open an issue on the repository.
-
----
 
 **Built with ❤️ for compliant tokenization on Monad Testnet**
